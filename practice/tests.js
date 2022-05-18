@@ -123,66 +123,90 @@ function runTests() {
   mocha.setup("bdd");
   const expect = chai.expect;
 
-  describe("Greeting Assignment", function () {
-    const runBtn = document.getElementById('greet-btn')
-    const userAge = 20
-    let greetFnSpy
-    let alertStub
+  describe("Dice Roll Practice", function () {
+    let rollBtn = document.querySelector('button')
     let promptStub
+    let alertStub
     let confirmStub
-    function stubPrompt(firstReturn, secondReturn) {
-      promptStub = sinon.stub(window, 'prompt')
-      promptStub.onFirstCall().returns('Sally')
-      promptStub.onSecondCall().returns('20')
+    let randomStub
+    const stubRandom = num => {
+      if (randomStub) randomStub.restore()
+      randomStub = sinon.stub(Math, 'random').returns(num)
+    }
+    const stubPrompt = str => {
+      if (promptStub) promptStub.restore()
+      promptStub = sinon.stub(window, 'prompt').returns(str)
+    }
+    const stubConfirm = bool => {
+      if (confirmStub) confirmStub.restore()
+      confirmStub = sinon.stub(window, 'confirm')
+      confirmStub.onFirstCall().returns(bool)
+      confirmStub.onSecondCall().returns(false)
     }
     beforeEach(() => {
-      if (greet)
-        greetFnSpy = sinon.spy(window, 'greet')
       alertStub = sinon.stub(window, 'alert')
-      confirmStub = sinon.stub(window, 'confirm').returns(true)
-      stubPrompt()
+      stubPrompt('6')
+      stubConfirm(false)
+      stubRandom(0)
     })
-    afterEach(() => {
-      sinon.restore()
-    })
+    afterEach(sinon.restore)
     after(() => {
-      testBtn.textContent = 'Close Tests'
       testBtn.disabled = false
+      testBtn.textContent = 'Close Tests'
     })
-    describe('Setup', () => {
-      it('Clicking "Greetings" button should run "greet" function', () => {
-        runBtn.click()
-        expect(greetFnSpy.called).to.be.true
-      })
+    it('should have a roll button', () => {
+      expect(rollBtn).to.exist
+      expect(rollBtn).to.not.eq(testBtn)
+      expect(rollBtn.textContent.toLowerCase())
+        .to.include('roll')
     })
-    describe('greet function', () => {
-      it('should prompt user with "What is your name?"', () => {
-        runBtn.click()
-        expect(/what is your name[\?]{0,1}/gi.test(prompt.firstCall.args[0])).to.be.true
-      })
-      it('should alert "Hello, Name" after prompting user for name', () => {
-        runBtn.click()
-        expect(/what is your name[\?]{0,1}/gi.test(prompt.firstCall.args[0])).to.be.true
-        expect(/hello[\s,]{0,2}sally/gi.test(alertStub.firstCall.args[0])).to.be.true
-      })
-      it('should use a prompt to ask the user "How old are you?"', () => {
-        runBtn.click()
-        expect(/how old are you[\?]{0,1}/gi.test(prompt.secondCall.args[0])).to.be.true
-      })
-      it('should use a confirm to ask user if his/her birthday has passed this year', () => {
-        runBtn.click()
-        expect(/birthday/gi.test(confirmStub.firstCall.args[0])).to.be.true
-      })
-      it("should alert user's birth year if user's birthday has passed this year", () => {
-        runBtn.click()
-        expect(alertStub.secondCall.args[0].includes(new Date().getFullYear() - userAge)).to.be.true
-      })
-      it("should alert user's birth year if user's birthday has NOT yet passed this year", () => {
-        confirmStub.restore()
-        sinon.stub(window, 'confirm').returns(false)
-        runBtn.click()
-        expect(alertStub.secondCall.args[0].includes(new Date().getFullYear() - userAge - 1)).to.be.true
-      })
+    it('should prompt for how many sided die to roll', () => {
+      rollBtn.click()
+      expect(promptStub.called).to.be.true
+      expect(promptStub.firstCall.args[0]).to.exist
+      expect(promptStub.firstCall.args[0].toLowerCase())
+        .to.include('side')
+    })
+    it('should alert with number result of dice roll', () => {
+      rollBtn.click()
+      expect(alertStub.called).to.be.true
+      expect(alertStub.firstCall.args[0].match(/\d/))
+        .to.exist
+    })
+    it('should roll between 1 and amount of sides of die', () => {
+      rollBtn.click()
+      expect(alertStub.called).to.be.true
+      expect(alertStub.firstCall.args[0])
+        .to.include('1')
+
+      stubRandom(0.99)
+
+      rollBtn.click()
+      expect(alertStub.secondCall.args[0])
+        .to.include('6')
+    })
+    it('should exit the function and not roll if a non-number is given', () => {
+      stubPrompt('banana')
+      rollBtn.click()
+      expect(alertStub.called).to.be.false
+    })
+    it('should exit the function and not roll if user cancels prompt', () => {
+      stubPrompt(null)
+      rollBtn.click()
+      expect(alertStub.called).to.be.false
+    })
+    it('BONUS: should ask to roll again', () => {
+      rollBtn.click()
+      expect(confirmStub.called).to.be.true
+      expect(confirmStub.firstCall.args[0])
+        .to.include('roll again')
+    })
+    it('BONUS: rolling again should call the function again', () => {
+      stubConfirm(true)
+      rollBtn.click()
+      expect(confirmStub.calledTwice).to.be.true
+      expect(alertStub.calledTwice).to.be.true
+      expect(promptStub.calledTwice).to.be.true
     })
   });
 
