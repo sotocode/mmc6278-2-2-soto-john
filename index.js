@@ -23,3 +23,17 @@ If the user clicks OK, call your function again.
 NOTE: Extra alerts, confirms, and prompts
 will cause the tests to fail!
 */
+
+function roll() {
+    var sidesStr = prompt('How many sides should the dice have?')
+    var sidesNum = parseInt(sidesStr)
+    
+    if (!sidesNum) return
+    var rollResult = Math.floor(Math.random() * sidesNum) + 1
+    alert('you rolled a ' + rollResult)
+    var rollAgain = confirm('roll again?')
+    
+    if (rollAgain) {
+      return roll()
+    }
+}
